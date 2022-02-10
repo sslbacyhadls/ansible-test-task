@@ -1,0 +1,129 @@
+---
+
+- name: jboss install | create group
+  group:
+    name: jboss
+    state: present
+    system: yes
+
+- name: jboss install | create user
+  user:
+    name: jboss
+    group: jboss
+    system: yes
+
+
+- name: jboss install | create dir
+  file:
+    path: "{{ jboss_home }}"
+    state: directory
+    recurse: yes
+    owner: jboss
+    group: jboss
+    mode: 0755
+
+- name: jboss install | install unzip
+  yum:
+    name: unzip
+    state: latest
+
+- name: jboss install | stop jboss service
+  service:
+    name: jboss_as
+    state: stopped
+  ignore_errors: yes
+
+- name: jboss install | unzip archive to server
+  unarchive:
+    src: "jboss-eap-{{ jboss_version }}.0.zip"
+    dest: "{{ jboss_home }}"
+
+- name: jboss install | create console log file
+  file:
+    path: "{{ jboss_home }}/console.log"
+    state: touch
+    owner: jboss
+    group: jboss
+    mode: 0775
+
+- name: jboss install | create config directory
+  file:
+    state: directory
+    dest: /etc/jboss-as
+    owner: root
+    mode: 0644
+
+- name: jboss install | provide jboss config
+  template:
+    src: jboss_standalone.conf.j2
+    dest: /etc/jboss-as/jboss-as.conf
+    owner: root
+    mode: 0775
+
+- name: jboss install | provide jboss init config
+  template:
+    src: jboss_init_standalone.j2
+    dest: /etc/init.d/jboss-as
+    owner: root
+    mode: 0775
+
+- name: jboss install | jboss run at startup
+  service:
+    name: jboss-as
+    enabled: yes
+
+- name: jboss install | add admin
+  command: "{{ jboss_home }}/jboss-eap-{{ jboss_version }}/bin/add-user.sh -u {{ jboss_user }} -p {{ jboss_user }}123!"
+  environment:
+    JAVA_HOME: "{{ java_home }}"
+
+- name: jboss install | fix permissions of directory
+  command: chown -R jboss:jboss {{ jboss_home }}
+
+
+- name: jboss install | start jboss
+  service:
+    name: jboss-as
+    state: started
+
+- name: jboss install | check postgres-module install standalone
+  command: "{{ jboss_home }}/jboss-eap-{{jboss_version}}/bin/jboss-cli.sh --controller=localhost:9999 -c --command=/subsystem=datasources/jdbc-driver=postgresql:read-resource --user={{ jboss_user }} --password={{ jboss_user}}123!"
+  ignore_errors: true
+  environment:
+      JAVA_HOME: "{{ java_home }}"
+  register: postgres_standalone
+
+- name: jboss install | check mysql-module install standalone
+  command: "{{ jboss_home }}/jboss-eap-{{jboss_version}}/bin/jboss-cli.sh --controller=localhost:9999 -c --command=/subsystem=datasources/jdbc-driver=mysql:read-resource --user={{ jboss_user }} --password={{ jboss_user}}123!"
+  ignore_errors: true
+  environment:
+      JAVA_HOME: "{{ java_home }}"
+  register: mysql_standalone
+
+- name: jboss install | extract postgresql-module.zip
+  unarchive:
+    src: postgresql-module.zip
+    dest: "{{jboss_home}}/jboss-eap-{{jboss_version}}/modules/"
+    owner: jboss
+    group: jboss
+  when: postgres_standalone is failed
+
+- name: jboss install | extract mysql module to server
+  unarchive:
+    src: mysql-module.tar.gz
+    dest: "{{ jboss_home }}/jboss-eap-{{ jboss_version }}/modules/"
+    owner: jboss
+    group: jboss
+  when: mysql_standalone is failed
+
+- name: jboss install | install postgresql module
+  command: "{{ jboss_home }}/jboss-eap-{{jboss_version}}/bin/jboss-cli.sh --controller=localhost:9999 -c --command=/subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
+  environment:
+      JAVA_HOME: "{{java_home}}"
+  when: postgres_standalone is failed
+
+- name: install mysql-module standalone
+  command: "{{ jboss_home }}/jboss-eap-{{jboss_version}}/bin/jboss-cli.sh --controller=localhost:9999 -c --command=/subsystem=datasources/jdbc-driver=mysql:add(driver-name=mysql,driver-module-name=com.mysql,driver-datasource-class-name=com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource)"
+  environment:
+      JAVA_HOME: "{{java_home}}"
+  when: mysql_standalone is failed

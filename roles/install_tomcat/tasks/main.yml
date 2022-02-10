@@ -1,0 +1,79 @@
+- name: tomcat | create {{tomcat_system_user}} group
+  group:
+    name: "{{tomcat_system_user}}"
+    state: present
+    system: yes
+
+- name: tomcat | create {{tomcat_system_user}} user
+  user:
+    name: "{{tomcat_system_user}}"
+    group: "{{tomcat_system_user}}"
+    system: yes
+
+- name: tomcat | install tomcat folder
+  file:
+    path: "{{tomcat_folder}}"
+    state: directory
+    owner: "{{tomcat_system_user}}"
+    group: "{{tomcat_system_user}}"
+
+- name: tomcat | unarchive tomcat on server
+  unarchive:
+    src: "{{tomcat_file}}"
+    dest: "{{tomcat_folder}}"
+
+- name: tomcat | create tomcat files
+  template:
+    src: "{{item}}"
+    dest: "{{tomcat_folder}}/apache-tomcat-{{tomcat_version}}/{{item}}"
+  with_items:
+    - bin/setenv.sh
+    - conf/server.xml
+    - conf/tomcat-users.xml
+    - webapps/manager/META-INF/context.xml
+
+- name: tomcat | tomcat init.d script
+  template:
+    src: "{{item}}.j2"
+    dest: "/etc/init.d/{{item}}"
+    mode: 0755
+  with_items:
+     - tomcat
+
+- name: tomcat | fix permissions
+  file:
+    dest: "{{ tomcat_folder }}"
+    owner: "{{tomcat_system_user}}"
+    group: "{{tomcat_system_user}}"
+    recurse: yes
+
+- name: tomcat | Enable and Start tomcat service
+  sysvinit:
+    name: tomcat
+    state: started
+    enabled: yes
+
+- name: tomcat | create dirs for first install
+  file: path={{tomcat_folder}}/apache-tomcat-{{tomcat_version}}/{{item}} state=directory owner={{tomcat_system_user}} group={{tomcat_system_user}}
+  with_items:
+    - conf/Catalina/localhost
+  when: tomcat_version is defined
+
+- name: tomcat | create dir for log4j
+  file:
+    path: "{{ tomcat_folder }}/apache-tomcat-{{tomcat_version}}/lib/log4j2"
+    state: directory
+    recurse: yes
+
+- name: tomcat | copy log4j fles
+  unarchive:
+    src: "{{ log4j_file }}"
+    dest: "{{ tomcat_folder }}/apache-tomcat-{{tomcat_version}}/lib/log4j2/"
+    owner: "{{tomcat_system_user}}"
+    group: "{{tomcat_system_user}}"
+    extra_opts: --strip-components=1
+
+- name: tomcat | copy log4j config
+  template:
+    src: log4j2.xml
+    dest: "{{ tomcat_folder }}/apache-tomcat-{{tomcat_version}}/conf"

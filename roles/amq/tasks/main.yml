@@ -1,0 +1,153 @@
+---
+- name: amq | create group
+  group:
+    name: "{{amq_user}}"
+    state: present
+
+- name: amq | create user
+  user:
+    name: "{{amq_user}}"
+    group: "{{amq_user}}"
+
+- name: amq | modify limits.conf
+  lineinfile:
+    dest: "/etc/security/limits.conf"
+    line: "{{item.line}}"
+  with_items:
+    - {line: "jboss\tsoft\tnofile\t65536" }
+    - {line: "jboss\thard\tnofile\t65536" }
+    - {line: "jboss\tsoft\tnproc\t16384" }
+    - {line: "jboss\thard\tnproc\t32768" }
+  ignore_errors: yes
+
+- name: amq | create amq home
+  file:
+    path: "{{amq_home}}"
+    state: directory
+
+- name: amq | unarchive amq no server
+  unarchive:
+    src: "{{amq_file_name}}"
+    dest: "{{amq_home}}"
+    owner: "{{amq_user}}"
+    group: "{{amq_user}}"
+
+- name: move files to location
+  shell: "y | mv -f {{amq_home}}/jboss-a-mq-{{amq_version}}.*redhat-*/* {{amq_home}}"
+  ignore_errors: yes
+  become: yes
+
+- shell: "rmdir {{amq_home}}/jboss-a-mq-{{amq_version}}.*redhat-*"
+  ignore_errors: yes
+  become: yes
+
+- name: amq | create data dir
+  file:
+    state: directory
+    dest: "{{data_dir}}"
+    owner: "{{amq_user}}"
+    group: "{{amq_user}}"
+
+- name: amq | provide users.properties config
+  template:
+    src: "{{amq_version}}/users.properties.j2"
+    dest: "{{amq_home}}/etc/users.properties"
+    owner: "{{amq_user}}"
+    mode: 0644
+
+- name: amq | modify start script
+  replace:
+    dest: "{{amq_home}}/bin/start"
+    regexp: '(\s+)exec(\s+.*)$'
+    replace: '\1nohup\2'
+    backup: yes
+
+- name: amq | copy configs to server
+  template:
+    src: "{{amq_version}}/{{item}}.j2"
+    dest: "{{amq_home}}/etc/{{item}}"
+    owner: "{{amq_user}}"
+    group: "{{amq_user}}"
+  with_items:
+    - org.apache.karaf.management.cfg
+    - org.apache.karaf.shell.cfg
+    - system.properties
+    - jetty.xml
+    - io.fabric8.mq.fabric.server-broker.cfg
+    - org.apache.karaf.jaas.cfg
+    - org.ops4j.pax.logging.cfg
+  notify: restart amq
+
+- name: amq | run amq
+  shell: "{{amq_home}}/bin/start"
+  args:
+    chdir: "{{amq_home}}"
+- pause:
+    seconds: 80
+
+
+- name: amq | install wrapper
+  shell: "{{amq_home}}/bin/client -h localhost -u {{amq_user}} -p {{amq_pass}} -a 8101 features:install wrapper"
+
+  ignore_errors: yes
+
+
+- name: amq | install amq-service wrapper
+  shell: "{{amq_home}}/bin/client -h localhost -u {{amq_user}} -p {{amq_pass}} -a 8101 'wrapper:install -n {{amq_service_name}} -d {{amq_service_name}}'"
+
+  ignore_errors: yes
+
+- name: amq | stop amq-service
+  shell: "{{amq_home}}/bin/stop"
+  args:
+    chdir: "{{amq_home}}"
+- pause:
+    seconds: 80
+
+- name: amq | provide activemq.xml config
+  template:
+    src: "{{amq_version}}/activemq.xml.j2"
+    dest: "{{amq_home}}/etc/activemq.xml"
+    owner: "{{amq_user}}"
+    mode: 0644
+  notify: restart amq
+
+- name: amq | provide init.d script
+  template:
+    src: "{{amq_version}}/amq-service.j2"
+    dest: /etc/init.d/{{amq_service_name}}-service
+    owner: root
+    group: root
+    mode: 0755
+
+- name: amq | enable amq-service
+  service:
+    name: "{{amq_service_name}}-service"
+    enabled: yes
+
+
+- name: amq | fix permissions directory
+  file:
+    path: "{{amq_home}}"
+    state: directory
+    owner: "{{amq_user}}"
+    group: "{{amq_user}}"
+    recurse: yes
+
+
+- name: amq | fix permission data directory
+  file:
+    path: "{{data_dir}}"
+    state: directory
+    owner: "{{amq_user}}"
+    group: "{{amq_user}}"
+    recurse: yes
+
+
+- name: amq | provide wrapper config
+  template:
+    src: "{{amq_version}}/amq-wrapper.conf.j2"
+    dest: "{{amq_home}}/etc/{{amq_service_name}}-wrapper.conf"
+    owner: "{{amq_user}}"
+    group: "{{amq_user}}"
+  notify: restart amq

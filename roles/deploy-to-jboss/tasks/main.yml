@@ -1,0 +1,33 @@
+---
+- name: deploy | make deployments folder
+  file:
+    path: /opt/jboss/deployments
+    state: directory
+
+- name: deploy | create folders for files
+  file:
+    path: "/tmp/{{ item.name }}"
+    state: directory
+  with_items: "{{ deployments }}"
+
+- name: deploy | copy files to server
+  unarchive:
+    src:  "{{ item.name }}"
+    dest: "/tmp/{{item.name}}"
+  with_items: "{{ deployments }}"
+
+
+- name: deploy | undeploy
+  command: "{{ jboss_home }}/jboss-eap-{{ jboss_version }}/bin/jboss-cli.sh --controller=localhost:9999 -c --command='undeploy {{item.run_file}} --all-relevant-server-groups'"
+  with_items: "{{ deployments }}"
+  environment:
+    JAVA_HOME: "{{ java_home }}"
+  with_items: "{{deployments}}"
+  ignore_errors: yes
+
+- name: deploy | deploy
+  command: "{{ jboss_home }}/jboss-eap-{{ jboss_version }}/bin/jboss-cli.sh --controller=localhost:9999 -c --command='deploy /tmp/{{ item.name }}/{{ item.run_file }} --server-groups={{item.dest_server_group}}'"
+  with_items: "{{ deployments }}"
+  environment:
+    JAVA_HOME: "{{ java_home }}"
+  with_items: "{{deployments}}"

@@ -1,0 +1,28 @@
+---
+
+- name: install sign |  provide configuration files
+  template:
+    src: "{{item}}"
+    dest: "{{tomcat_folder}}/apache-tomcat-{{tomcat_version}}/{{item}}"
+    backup: yes
+    owner: "{{tomcat_system_user}}"
+    group: "{{tomcat_system_user}}"
+  with_items:
+    - conf/Catalina/localhost/sign-service.xml
+    - conf/Catalina/localhost/sign-demo.xml
+    - conf/sign-demo.properties
+    - conf/sign-service-config-local.xml
+    - conf/sign-service-config-global.xml
+
+- name: install sign | copy war
+  copy:
+    src: "{{item}}"
+    dest: "{{tomcat_folder}}/apache-tomcat-{{tomcat_version}}/webapps/"
+  with_items:
+    - sign-demo.war
+    - sign-service.war
+
+- name: install sign | restart tomcat
+  sysvinit:
+    name: tomcat
+    state: restarted

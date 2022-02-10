@@ -1,0 +1,117 @@
+---
+- name: install xrm-sign
+  hosts: all
+  become: yes
+  vars:
+     - java_home: /opt/jdk/latest/
+     - java_file: jdk-8u202-linux-x64.tar.gz
+     - csp_archive: linux-amd64.tgz
+     - java_csp_archive: java-csp-5.0.41975.zip
+     - java_csp_version: 5.0.41975
+     - cryptopro_java_csp_path: /opt/java_csp
+     - tomcat_system_user: tomcat
+     - tomcat_folder: /opt/tomcat
+     - tomcat_file: apache-tomcat-9.0.58.tar.gz
+     - tomcat_version: 9.0.58
+     - tomcat_users:
+        - name: tomcat
+          password: admin123
+          roles: manager-gui
+     - allowed_manager_pool: 172\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1
+     - tomcat_http_port: 8080
+     - tomcat_https_port: 8081
+     - tomcat_jmx_enable: false
+     - tomcat_java_opts: -Xms4G -Xmx4G -Dlog4j2.formatMsgNoLookups=true
+     - jre_file: jre-8u321-linux-x64.tar.gz
+     - sign_tomcat_path: "{{tomcat_folder}}/apache-tomcat-{{tomcat_version}}/webapps/sign-demo"
+     - xrm_sign_root_certs:
+         - name: "test02"
+           id: "test02"
+           url: "http://certenroll.test.gosuslugi.ru/cdp/4810af0f5ddc992476f7bf0dda4b7d0dd94ce1f7.crl"
+           certificate: |
+                MIIFdzCCBSSgAwIBAgIQcgsBVlAAELPoEaRoS+uv+zAKBggqhQMHAQEDAjCCAT8x
+                GDAWBgUqhQNkARINMTAyNzcwMDE5ODc2NzEaMBgGCCqFAwOBAwEBEgwwMDc3MDcw
+                NDkzODgxCzAJBgNVBAYTAlJVMSkwJwYDVQQIDCA3OCDQodCw0L3QutGCLdCf0LXR
+                gtC10YDQsdGD0YDQszEmMCQGA1UEBwwd0KHQsNC90LrRgi3Qn9C10YLQtdGA0LHR
+                g9GA0LMxWDBWBgNVBAkMTzE5MTAwMiwg0LMuINCh0LDQvdC60YIt0J/QtdGC0LXR
+                gNCx0YPRgNCzLCDRg9C7LiDQlNC+0YHRgtC+0LXQstGB0LrQvtCz0L4g0LQuMTUx
+                JjAkBgNVBAoMHdCf0JDQniAi0KDQvtGB0YLQtdC70LXQutC+0LwiMSUwIwYDVQQD
+                DBzQotC10YHRgtC+0LLRi9C5INCj0KYg0KDQotCaMB4XDTE4MDYwNTA5MzQwNloX
+                DTMzMDYwNTA5MzQwNlowggE/MRgwFgYFKoUDZAESDTEwMjc3MDAxOTg3NjcxGjAY
+                BggqhQMDgQMBARIMMDA3NzA3MDQ5Mzg4MQswCQYDVQQGEwJSVTEpMCcGA1UECAwg
+                Nzgg0KHQsNC90LrRgi3Qn9C10YLQtdGA0LHRg9GA0LMxJjAkBgNVBAcMHdCh0LDQ
+                vdC60YIt0J/QtdGC0LXRgNCx0YPRgNCzMVgwVgYDVQQJDE8xOTEwMDIsINCzLiDQ
+                odCw0L3QutGCLdCf0LXRgtC10YDQsdGD0YDQsywg0YPQuy4g0JTQvtGB0YLQvtC1
+                0LLRgdC60L7Qs9C+INC0LjE1MSYwJAYDVQQKDB3Qn9CQ0J4gItCg0L7RgdGC0LXQ
+                u9C10LrQvtC8IjElMCMGA1UEAwwc0KLQtdGB0YLQvtCy0YvQuSDQo9CmINCg0KLQ
+                mjBmMB8GCCqFAwcBAQEBMBMGByqFAwICIwEGCCqFAwcBAQICA0MABEDkmNXXv/fT
+                XGwqh9YBqXd5VDLa2+2P67SzEhXyhsOFUPUuDbk1FwNXx/s3efgc0jexpggrVDfu
+                FvolwT5ro4Jwo4IB7zCCAeswDgYDVR0PAQH/BAQDAgGGMB0GA1UdDgQWBBRIEK8P
+                XdyZJHb3vw3aS30N2Uzh9zARBgkrBgEEAYI3FAIEBAwCQ0EwEgYDVR0TAQH/BAgw
+                BgEB/wIBADAlBgNVHSAEHjAcMAYGBFUdIAAwCAYGKoUDZHEBMAgGBiqFA2RxAjCC
+                ARAGBSqFA2RwBIIBBTCCAQEMGtCa0YDQuNC/0YLQvtCf0YDQviBDU1AgNC4wDB3Q
+                mtGA0LjQv9GC0L7Qn9GA0L4g0KPQpiB2LjIuMAxh0KHQtdGA0YLQuNGE0LjQutCw
+                0YLRiyDRgdC+0L7RgtCy0LXRgtGB0YLQstC40Y8g0KTQodCRINCg0L7RgdGB0LjQ
+                uCDQodCkLzEyNC0zMzgwINC+0YIgMTEuMDUuMjAxOAxh0KHQtdGA0YLQuNGE0LjQ
+                utCw0YLRiyDRgdC+0L7RgtCy0LXRgtGB0YLQstC40Y8g0KTQodCRINCg0L7RgdGB
+                0LjQuCDQodCkLzEyOC0yOTgzINC+0YIgMTguMTEuMjAxNjAlBgUqhQNkbwQcDBrQ
+                mtGA0LjQv9GC0L7Qn9GA0L4gQ1NQIDQuMDAQBgkrBgEEAYI3FQEEAwIBADAfBgkr
+                BgEEAYI3FQcEEjAQBggqhQMCAi4AAAIBAQIBADAKBggqhQMHAQEDAgNBADA0sh87
+                iQPdgVErTpIdmJDLzYyU5Oa99p1YqakOD5H6ajsLSzve57hht61JwhOJscvwcrtz
+                jUqutRZEB5lgY9s=
+     - xrm_sign_configure_keys:
+          - name: "smev-test02-key"
+            certname: "test02"
+            container: "TEST02"
+            container_id: "test2"
+            alias: 'HDIMAGE\\TEST02.000\F9C9'
+            password: "1234567890"
+     - log4j_file: apache-log4j-2.11.1-bin.tar.gz
+     - tomcat_pam_limits_default:
+       nofile:
+         domain: "{{tomcat_user}}"
+         comment: "Maximum nofile"
+         limit_type: "-"
+         value: "65535"
+       nproc:
+         domain: "{{tomcat_user}}"
+         comment: "Maximum nproc"
+         limit_type: "-"
+         value: "32768"
+     - crypto_keys:
+         - name: "smev-test02-key"
+           certname: "test02"
+           container: "TEST02"
+           container_id: "test2"
+           alias: 'HDIMAGE\\TEST02.000\F9C9'
+           password: "1234567890"
+     - key_archive: TEST02.zip
+     - xrm_sign_demo_secret: demo_secret
+     - xrm_sign_authSettings: {
+       callers: [{
+         enabled: "true",
+         name: "Demo-app", # Наименование информационной системы. Служит для удобства администратора, в работе ПП не используется
+         apiKey: "demo_secret", # Уникальный API-ключ, посредством которого выполняется аутентификация ИС
+         sign_enabled: "true", # Настройки доступа к методам простановки ЭП. Если блок отсутствует, доступа нет. Если блок присутствует, по умолчанию подразумевается enabled="true"
+         sign_keys: ["smev-test02-key"], # Идентификаторы закрытых ключей, которыми ИС имеет право пользоваться для простановки ЭП
+         verify_enabled: "false", # Настройки доступа к методам проверки ЭП и сертификатов. Если блок отсутствует, доступ есть. Если блок присутствует, по умолчанию подразумевается enabled="true".
+         digest_enabled: "true", # Настройки доступа к методам хэширования. Если блок отсутствует, доступ есть. Если блок присутствует, по умолчанию подразумевается enabled="true"
+         management_enabled: "true", # Настройки доступа к служебным методам ПП. Если блок отсутствует, доступа нет. Если блок присутствует, по умолчанию подразумевается enabled="true".
+         monitoring_enabled: "false"}, # Настройки доступа к методам мониторинга. Если блок отсутствует, доступа нет. Если блок присутствует, по умолчанию подразумевается enabled="true".
+       ],
+       anonymous: {
+         verify_enabled: "false",
+         digest_enabled: "false",
+         management_enabled: "false",
+         monitoring_enabled: "true",
+       }
+     }
+
+     - xrm_sign_demo_serviceUrl: http://172.10.0.37:8080/sign-service
+
+  roles:
+      - install_jdk
+      - install_cryptopro
+      - install_tomcat
+      - install_keys
+      - install_sign

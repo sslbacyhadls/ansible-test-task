@@ -1,0 +1,11 @@
+- hosts: all
+  vars:
+    - java_home: /opt/jdk/latest/
+    - java_file: jdk-7u80-linux-x64.tar.gz
+    - jboss_home: /opt/jboss/
+    - jboss_version: 6.4
+    - jboss_user: admin
+  become: yes
+  roles:
+   - install_jdk
+   - install_standalone_jboss

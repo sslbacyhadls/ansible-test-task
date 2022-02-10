@@ -1,0 +1,39 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    - java_home: /usr/lib/jvm/java
+    #- java_file: latest
+    #- jre_file: jre-8u321-linux-x64.tar.gz
+    - amq_file_name: jboss-a-mq-6.3.0.redhat.zip
+    - amq_home: /opt/amq
+    - amq_user: jboss
+    - amq_pass: password1
+    - ans_host_ip: 172.10.0.38
+    - data_dir: "/opt/kahadb"
+    - amq_service_name: amq
+    - amq_jvm_mem: 1024
+    - amq_version: 6.3.0
+    - amq_system: {
+                  "mem_percent": 70,
+                  "store_limit": 100,
+                  "temp_limit": 50,
+                  "max_connections": 1000
+      }
+    - amq_connections: [
+        {name: "host1", host: 172.10.0.38, port: 61616, user: "admin", password: "{{amq_pass}}", type: "queue"}
+      ]
+
+    - node_ip_addr: "172.10.0.38"
+
+  pre_tasks:
+    - name: amq | install unzip
+      yum:
+        name: unzip
+        state: latest
+
+
+
+  roles:
+    - install_jdk
+    - amq

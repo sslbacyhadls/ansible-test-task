@@ -1,0 +1,14 @@
+---
+
+- name: jboss postinstall | Create config.cli on server
+  template: src=config.cli.j2 dest=/tmp/config.cli owner=jboss group=jboss
+  when: domain_controller|bool
+  become: yes
+
+- name: jboss postinstall | Create servers and server group
+  command: "{{jboss_home}}/jboss-eap-{{jboss_version}}/bin/jboss-cli.sh --controller=localhost:9999 -c --file=/tmp/config.cli"
+  when: domain_controller|bool
+  environment:
+      JAVA_HOME: "{{ java_home }}"
+  ignore_errors: true
+  become: yes

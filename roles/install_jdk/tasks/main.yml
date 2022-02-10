@@ -1,0 +1,53 @@
+---
+- name: java | create dir
+  file:
+    path: "{{ java_home }}"
+    state: directory
+    recurse: yes
+    owner: root
+    group: root
+    mode: 0755
+  when: java_file is defined
+
+- name: java | unzip archive to server
+  unarchive:
+    src: "{{ java_file }}"
+    dest: "{{ java_home }}"
+    extra_opts: --strip-components=1
+  when: java_file is defined
+
+- name: java | install java
+  yum:
+    name: java
+    state: latest
+  when: jre_file is not defined
+
+- name: java | install java
+  yum:
+    name: java-1.8.0-openjdk-devel
+    state: latest
+  when: java_file is not defined
+
+- name: java | create jre dir
+  file:
+    path: "{{ java_home }}/jre"
+    state: directory
+    recurse: yes
+    owner: root
+    group: root
+    mode: 0755
+  when: jre_file is defined
+
+- name: java | unzip jre archive to server
+  unarchive:
+    src: "{{ jre_file }}"
+    dest: "{{ java_home }}/jre"
+    list_files: yes
+    extra_opts: --strip-components=1
+  when: jre_file is defined
+
+
+- name: java | find java home
+  script: "java-find.sh"
+  register: java_home_reg
+  when: java_home is not defined

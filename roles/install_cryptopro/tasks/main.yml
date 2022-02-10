@@ -1,0 +1,46 @@
+---
+- name: csp | install lsb
+  yum:
+    name: lsb
+    state: latest
+
+- name: csp | create folder for unaerchived files
+  file:
+    path: /tmp/crypto
+    state: directory
+
+- name: csp | unarchive csp
+  unarchive:
+    src: "{{ csp_archive }}"
+    dest: "/tmp/crypto/"
+
+- name: csp | install csp
+  command: "/tmp/crypto/linux-amd64/install.sh"
+
+- name: csp | create path for java csp
+  file:
+    path: "{{cryptopro_java_csp_path}}"
+    state: "directory"
+
+- name: csp | install unzip
+  yum:
+    name: unzip
+    state: latest
+
+- name: csp | unarchive java csp
+  unarchive:
+    src: "{{java_csp_archive}}"
+    dest: "{{cryptopro_java_csp_path}}"
+  environment:
+    JAVA_HOME: "{{java_home}}"
+
+- name: csp | fix mode
+  file:
+    path: "{{cryptopro_java_csp_path}}/java-csp-{{java_csp_version}}/setup_console.sh"
+    mode: ugo+x
+    
+- name: csp | install java csp
+  command: "{{cryptopro_java_csp_path}}/java-csp-{{java_csp_version}}/setup_console.sh {{java_home}}/jre -force -install -jcsp -jcp -java"
+  become: true
+  args:
+    chdir: "{{cryptopro_java_csp_path}}/java-csp-{{java_csp_version}}"

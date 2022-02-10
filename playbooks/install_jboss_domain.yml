@@ -1,0 +1,40 @@
+- hosts: all
+  vars:
+    - slave_pass: admin123!
+    - domain_controller: True
+    - jboss_master_port: 9999
+    - master_node: node02
+    - master_ip: 10.32.101.202
+    - jboss_slaves: [node01]
+    - java_home: /opt/jdk/latest/
+    - java_file: jdk-7u80-linux-x64.tar.gz
+    - jboss_home: /opt/jboss/
+    - jboss_version: 6.4
+    - jboss_user: admin
+    - server_groups:
+        - name: cluster-group-rest
+          profile: full-ha-rest
+
+        - name: cluster-group-ejb
+          profile: full-ha-ejb
+    - connections:
+        - name: remote-ejb-connection
+          binding: remote-ejb
+          profile: full-ha-rest
+          hosts:
+            - host: localhost
+              port: 5447
+
+        - name: remote-ejb-connection-signature
+          binding: remote-ejb-sign
+          profile: full-ha-ejb
+          hosts:
+            - host: tsign
+              port: 4447
+
+
+  become: yes
+  roles:
+   - install_jdk
+   - install_domain_jboss
+   - jboss_postinstall

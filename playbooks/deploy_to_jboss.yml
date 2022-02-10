@@ -1,0 +1,12 @@
+- hosts: all
+  vars:
+    - java_home: /opt/jdk/latest/
+    - deployments:
+          - name: activemq-rar-5.16.3.rar
+            dest_server_group: cluster-group-rest
+            run_file: activemq-client-5.16.3.jar
+    - jboss_home: /opt/jboss/
+    - jboss_version: 6.4
+  become: yes
+  roles:
+   - deploy-to-jboss

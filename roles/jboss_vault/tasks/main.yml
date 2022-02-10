@@ -1,0 +1,16 @@
+---
+
+- name: jboss vault | create vault directory
+  file:
+    path: "{{ jboss_home }}/vault"
+    state: directory
+    owner: jboss
+    group: jboss
+
+- name: jboss vault | copy vault-files
+  copy:
+    src: "{{item}}"
+    dest: "{{jboss_home}}/vault"
+    owner: jboss
+    group: jboss
+  with_items: "{{vault_files}}"

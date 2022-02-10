@@ -1,0 +1,8 @@
+JBOSS_USER=jboss
+JBOSS_HOME={{ jboss_home }}/jboss-eap-{{ jboss_version }}
+JBOSS_PIDFILE=/var/run/jboss-as/jboss-as-{{ inventory_hostname }}.pid
+JBOSS_OPTS="-Djboss.bind.address.management=0.0.0.0 -Djboss.socket.binding.port-offset={{ port_offset|default(0) }}"
+JAVA_HOME={{ java_home }}
+JBOSS_CONSOLE_LOG=/dev/null
+HOST_CONTROLLER_JAVA_OPTS="-Xms1024m  -Xmx2048m -XX:MaxPermSize=512m"
+#JAVA_OPTS="-Xms1303m -Xmx1303m -XX:MaxPermSize=256m"

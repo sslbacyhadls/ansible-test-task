@@ -1,0 +1,42 @@
+---
+- name: keys | create dir
+  file:
+    path: "/var/opt/cprocsp/keys/tomcat/"
+    state: directory
+    mode: 777
+  become: yes
+
+- name: keys | clean old certs
+  command: "/opt/cprocsp/bin/amd64/certmgr -delete -all"
+  become: yes
+  become_user: tomcat
+  ignore_errors: yes
+
+- name: keys | extract keys
+  unarchive:
+    src: "{{key_archive}}"
+    dest: "/var/opt/cprocsp/keys/tomcat/"
+    decrypt: yes
+    owner: tomcat
+    group: tomcat
+  become: yes
+
+- name: keys | Fix permissions on directory
+  file:
+    path: "/var/opt/cprocsp/keys/tomcat/"
+    state: directory
+    recurse: yes
+    owner: tomcat
+    group: tomcat
+    mode: "u=rwX,g=rwX,o=rwX"
+
+- name: keys | Run cryptopro command to create key-cert link
+  shell: "{{__certmgr}} -inst -cont \"{{__hdimage}}{{item.container_id|d(item.container)}}\" -file {{__cert_file}} || {{__certmgr}} -inst -cont \"{{__hdimage}}{{item.container_id|d(item.container)}}\" -file {{__cert_file}} -at_signature"
+  vars:
+    __certmgr: "/opt/cprocsp/bin/amd64/certmgr"
+    __cert_file: "/var/opt/cprocsp/keys/tomcat/{{item.container}}.000/{{item.certname}}.cer"
+    __hdimage: '\\\\.\\HDIMAGE\\'
+  become: yes
+  become_user: tomcat
+  with_items:
+    - "{{crypto_keys}}"

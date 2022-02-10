@@ -1,0 +1,26 @@
+#jinja2: lstrip_blocks: True
+<?xml version="1.0" encoding="UTF-8"?>
+<sign-service-config-local xsi:schemaLocation="http://dom.gosuslugi.ru/schema/signature/config/local sign-service-config-local.xsd" xmlns="http://dom.gosuslugi.ru/schema/signature/config/local" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <signer-config>
+        <keys>
+        {% if xrm_sign_configure_keys is defined %}
+        {% for key in xrm_sign_configure_keys %}
+            <key id="{{key.name}}">
+                <storeType>HDIMAGE</storeType>
+                <keyAlias>{{key.alias}}</keyAlias>
+                <storePassword>{{key.password}}</storePassword>
+            </key>
+        {% endfor %}
+        {% endif %}
+        </keys>
+    </signer-config>
+    <rest-config>
+        {% if xrm_sign_settings.maxRequestsPerCore is defined %}
+        <maxRequestsPerCore>{{xrm_sign_settings.maxRequestsPerCore | default(10)}}</maxRequestsPerCore>
+        {% endif %}
+        {% if xrm_sign_settings.maxRequests is defined %}
+        <maxRequests>{{xrm_sign_settings.maxRequests | default (40)}}</maxRequests>
+        {% endif %}
+        <requestTimeout>{{xrm_sign_settings.requestTimeout | default(5000)}}</requestTimeout>
+    </rest-config>
+</sign-service-config-local>

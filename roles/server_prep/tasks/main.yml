@@ -1,0 +1,24 @@
+---
+- name: preparation | install lsof
+  yum:
+    name: lsof
+    state: latest
+  ignore_errors: yes
+
+- name: preparation | install nano
+  yum:
+    name: nano
+    state: latest
+  ignore_errors: yes
+
+- name: preparation | install netstat
+  yum:
+    name: netstat
+    state: latest
+  ignore_errors: yes
+
+- name: preparation | install unzip
+  yum:
+    name: unzip
+    state: latest
+  ignore_errors: yes

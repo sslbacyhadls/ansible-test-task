@@ -1,0 +1,9 @@
+- hosts: all
+  vars:
+    - jboss_home: /opt/jboss/
+    - vault_files:
+      - VAULT.dat
+      - vault.keystore
+  become: yes
+  roles:
+   - jboss_vault
